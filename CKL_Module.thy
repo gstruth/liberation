@@ -7,6 +7,9 @@ theory CKL_Module
 
 begin
 
+text \<open>This component shows that the semidirect product of a Kleene lattice and a 
+lattice with a least element forms a weak Kleene lattice.\<close>
+
 locale l_monoid_module =
   fixes act :: "'a::l_monoid \<Rightarrow> 'b::bounded_lattice_bot \<Rightarrow> 'b" ("\<alpha>") 
   assumes m1: "\<alpha> (x \<cdot> y) p = \<alpha> x (\<alpha> y p)"
