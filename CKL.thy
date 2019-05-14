@@ -61,6 +61,19 @@ end
 
 class action_lattice_zerol = kleene_lattice_zerol + residuated_l_monoid_zerol
 
+class l_monoid = l_monoid_zerol + dioid_one_zero
+
+class kleene_lattice = kleene_lattice_zerol + dioid_one_zero
+
+begin
+
+subclass l_monoid
+  by unfold_locales
+
+end
+
+class action_lattice = action_lattice_zerol + dioid_one_zero
+
 text \<open>Next we define weak cylindric l-monoids and prove some basic properties.\<close>
 
 locale cylindric_l_monoid_zerol = 
@@ -90,7 +103,7 @@ lemma cyl_clos: "(x \<le> cyl i y) = (cyl i x \<le> cyl i y)"
   by (metis cyl_ext cyl_inf le_iff_inf order_trans)
 
 lemma cyl_rel_prop_var1: "cyl i 1 \<cdot> x \<le> cyl i x"
-  by (metis cyl_clos cyl_multl cyl_multr mult_onel order_refl)
+  by (smt cyl_clos cyl_multl cyl_multr monoid.left_neutral mult.monoid_axioms order_refl)
 
 lemma cyl_rel_prop_var2: "x \<cdot> cyl i 1 \<le> cyl i x"
   by (metis cyl_clos cyl_ext cyl_multl cyl_multr mult_oner)
@@ -169,7 +182,7 @@ lemma cyl_star: "cyl i x\<^sup>\<star> \<le> cyl i 1 \<cdot> (cyl i x)\<^sup>\<s
   by (metis cyl_ext mult_isor mult_onel)
 
 lemma cyl_cyl_kplus [simp]: "cyl i ((cyl i x)\<^sup>\<oplus>) = (cyl i x)\<^sup>\<oplus>"
-  by (metis (no_types, hide_lams) cyl_ext cyl_fix_im cyl_kplus less_def less_le_trans)
+  by (metis cyl_ext cyl_fix_im cyl_kplus order_class.order.antisym)
 
 lemma cyl_kplus_onel [simp]: "cyl i 1 \<cdot> (cyl i x)\<^sup>\<oplus> = (cyl i x)\<^sup>\<oplus>"
   by (metis cyl_cyl_kplus cyl_1_unl)
@@ -190,7 +203,7 @@ lemma cyl_1_prop: "(cyl i 1)\<^sup>\<star> \<le> cyl i 1"
   by (simp add: local.cyl_ext star_inductl_one)
 
 lemma cyl_star_id [simp]: "(cyl i 1)\<^sup>\<star> = cyl i 1"
-  by (metis cyl_1_unr cyl_ext cyl_star_one_shift sup_id_star1 tc_eq)
+  by (simp add: cyl_1_prop order_class.order.antisym)
 
 lemma "(cyl i 1 \<cdot> x \<cdot> cyl i 1) \<sqinter> (cyl i 1 \<cdot> y \<cdot> cyl i 1) = cyl i 1 \<cdot> (x \<sqinter> (cyl i 1 \<cdot> y \<cdot> cyl i 1)) \<cdot> cyl i 1"
   (*nitpick*)
@@ -247,42 +260,31 @@ lemma dcy_idem [simp]: "dcy i (dcy i x) = dcy i x"
   by (metis cy_adj cy_idem order_class.order.antisym order_refl)
 
 lemma dcy_cy [simp]: "dcy i (cy i x) = cy i x"
-  by (metis (no_types, lifting) cy_adj dzy_le_zy inf.absorb_iff2 inf.commute join.le_iff_sup join.sup_ge2 zy_meet)
+  by (metis cy_adj cy_idem dzy_le_zy order_class.order.antisym order_refl)
 
 lemma dcy_dzy [simp]: "cy i (dcy i x) = dcy i x"
-  by (metis antisym_conv cy_adj dcy_cy dzy_le_zy inf.absorb_iff2 inf.cobounded2)
+  by (metis cy_adj dcy_cy order_class.order.antisym order_refl)
 
 lemma cy_comm: "cy i (cy j x) = cy j (cy i x)"
   by (meson cy_adj cy_dcy_semicomm eq_iff order.trans)
 
 lemma dcy_comm: "dcy i (dcy j x) = dcy j (dcy i x)"
-proof -
-have f1: "cy i (cy j (dcy i (dcy j x))) \<le> x"
-  by (metis (no_types) cy_adj cy_comm inf.idem le_iff_inf)
-  have "cy j (cy i (dcy j (dcy i x))) \<le> x"
-by (metis (no_types) cy_adj cy_comm inf.idem le_iff_inf)
-  then show ?thesis
-    using f1 cy_adj by auto
-qed
+  by (smt cy_adj cy_comm dcy_dzy eq_iff)
 
 lemma cy_dcy_index_comm: "(cy i x \<le> dcy j y) = (cy j x \<le> dcy i y)"
   by (simp add: cy_adj dcy_comm)
 
 lemma cy_iso: "x \<le> y \<Longrightarrow> cy i x \<le> cy i y"
-  by (metis cy_adj dcy_cy dzy_le_zy inf.orderE le_infI2 dcy_dzy)
+  by (metis cy_adj inf.orderE le_infI2 order_refl)
 
 lemma dcy_iso: "x \<le> y \<Longrightarrow> dcy i x \<le> dcy i y"
   by (meson cy_adj dual_order.trans order_refl)
 
 lemma cy_sup_pres: "cy i (x + y) = cy i x + cy i y"
-  apply (rule antisym)
-  using cy_adj apply force
-  by (simp add: cy_iso)
- 
+  by (meson cy_adj cy_iso join.le_sup_iff join.sup.cobounded1 join.sup.cobounded2 order_class.order.antisym)
+
 lemma dcy_inf_pres: "dcy i (x \<sqinter> y) = dcy i x \<sqinter> dcy i y"
-  apply (rule antisym)
-   apply (simp add: dcy_iso)
-  by (meson cy_adj inf.cobounded1 inf_le2 le_inf_iff)
+  by (meson cy_adj dcy_iso inf.cobounded1 inf.cobounded2 le_inf_iff order_class.order.antisym)
 
 lemma cy_canc1: "cy i (dcy i x) \<le> x"
   using cy_adj by blast
@@ -330,7 +332,7 @@ lemma dcy_star: "(dcy i x)\<^sup>\<oplus> \<le> dcy i (x\<^sup>\<oplus>)"
   by (metis (no_types, lifting) cy_adj cy_canc3 cy_kplus dcy_dzy kplus_def mult_isol_var order_class.order.antisym star_iso)
 
 lemma dcy_star_prop [simp]: "dcy i ((dcy i x)\<^sup>\<oplus>) = (dcy i x)\<^sup>\<oplus>"
-  by (metis dcy_idem dcy_infl dcy_star order_class.order.antisym)
+  by (metis dcy_idem dcy_infl dcy_star eq_iff)
 
 end
 
@@ -397,15 +399,7 @@ lemma lib_cyll: "lib i \<cdot> x\<^sup>\<oplus> \<le> (lib i \<cdot> x)\<^sup>\<
   by (metis (no_types, hide_lams) kplus_def l2 mult.assoc mult_isol mult_isor mult_onel star_iso)
 
 lemma lib_cylr: "x\<^sup>\<oplus> \<cdot> lib i \<le> (x \<cdot> lib i)\<^sup>\<oplus>"
-proof-
-  have "x\<^sup>\<oplus> \<cdot> lib i = x\<^sup>\<star> \<cdot> x \<cdot> lib i"
-    by (simp add: kplus_star_opp)
-  also have "... \<le> (x \<cdot> lib i)\<^sup>\<star> \<cdot> x \<cdot> lib i"
-    by (metis calculation conway.dagger_slide kplus_def l2 mult_double_iso mult_onel star_iso)
-  also have "... = (x \<cdot> lib i)\<^sup>\<oplus>"
-    by (simp add: kplus_star_opp mult.assoc)
-  finally show ?thesis.
-qed
+  by (smt conway.dagger_subdist join.sup_aci(1) kplus_def kplus_star_opp l2 lib_idem mult.assoc mult_double_iso star_denest_var sup_id_star1 tc_eq)
 
 lemma [simp]: "lib i \<cdot> (lib i \<cdot> x)\<^sup>\<oplus> = (lib i \<cdot> x)\<^sup>\<oplus>"
   by (metis (no_types, lifting) kplus_def lib_idem mult.assoc)
@@ -454,22 +448,7 @@ lemma li_fres_asj: "(x \<cdot> li i \<le> y) = (x \<le> fres y (li i))"
   by (simp add: fres_adj)
 
 lemma bres_prop: "bres (li i) x \<le> li i \<cdot> x"
-proof -
-have f1: "\<forall>b. (b::'b)\<^sup>\<star> = 1 + b \<cdot> b\<^sup>\<star>"
-by auto
-  have f2: "\<forall>b. (b::'b) \<cdot> b\<^sup>\<star> = b \<or> \<not> b \<cdot> b \<le> b"
-    by (metis star_slide_var tc)
-  have f3: "\<forall>b. (1::'b) \<le> bres b b"
-    by (metis (no_types) bres_adj mult_oner order_refl)
-  have f4: "\<forall>b. (b::'b) \<sqinter> b = b"
-    by simp
-  have f5: "\<forall>b ba. (ba::'b) \<cdot> bres ba b \<le> b"
-    using bres_adj by blast
-  have "\<forall>a. li a\<^sup>\<star> = li a"
-    using f4 f3 f2 by (metis (no_types) bres_adj le_infI2 li2 li3 mult_oner sup_id_star1)
-  then show ?thesis
-    using f5 f1 by (metis (no_types) absorp2 distrib_right' le_infI2 li2 mult_isol_var mult_onel)
-qed
+  by (metis (no_types, hide_lams) bres_adj dual_order.trans li2 mult_isor mult_onel order_refl)
 
 lemma fres_prop: "fres x (li i) \<le> x \<cdot> li i"
   by (metis (no_types, hide_lams) dual_order.trans fres_adj li2 mult_isol mult_oner order_refl)
@@ -492,22 +471,22 @@ lemma li_fres_canc1: "(fres x (li i)) \<cdot> li i \<le> x"
 lemma li_fres_canc2: "x \<le> (fres (x \<cdot> (li i)) (li i))"
   using fres_adj by blast
 
-lemma li_bres_prop: "(li i) \<cdot> (bres (li i) x) = bres (li i) x"
-  by (smt antisym bres_prop inf.absorb_iff2 li2 li3 li_bres_adj li_bres_canc1 li_bres_canc2 mult.assoc mult.left_neutral mult.right_neutral order.trans)
+lemma li_bres_prop [simp]: "(li i) \<cdot> (bres (li i) x) = bres (li i) x"
+  by (smt antisym bres_prop inf.absorb_iff2 li2 li3 li_bres_adj li_bres_canc1 li_bres_canc2 mult.assoc mult_onel mult_oner order.trans phl_cons2 phl_skip)
  
-lemma bres_li_prop: "bres (li i) (li i \<cdot> x) = li i \<cdot> x"
-  by (metis inf.absorb_iff2 inf.orderE li3 li_bres_canc1 li_bres_canc2 li_bres_prop)
+lemma bres_li_prop [simp]: "bres (li i) (li i \<cdot> x) = li i \<cdot> x"
+  by (metis antisym li_bres_canc1 li_bres_canc2 li_bres_prop mult_isol)
 
-lemma li_fres_prop: "(fres x (li i)) \<cdot> li i = fres x (li i)"
+lemma li_fres_prop [simp]: "(fres x (li i)) \<cdot> li i = fres x (li i)"
   by (smt fres_adj fres_prop inf.absorb_iff2 inf_commute li4 li_fres_canc1)
  
-lemma fres_li_prop: "fres (x \<cdot> li i) (li i) = x \<cdot> li i"
-  by (metis inf.absorb_iff2 inf.orderE li4 li_fres_canc1 li_fres_canc2 li_fres_prop)
+lemma fres_li_prop [simp]: "fres (x \<cdot> li i) (li i) = x \<cdot> li i"
+  by (metis antisym li_fres_canc1 li_fres_canc2 li_fres_prop mult_isor)
 
-lemma bres_bres_li: "bres (li i) (bres (li i) x) = bres (li i) x"
+lemma bres_bres_li [simp]: "bres (li i) (bres (li i) x) = bres (li i) x"
   by (metis bres_li_prop li_bres_prop)
 
-lemma fres_fres_li: "fres (fres x (li i)) (li i) = fres x (li i)"
+lemma fres_fres_li [simp]: "fres (fres x (li i)) (li i) = fres x (li i)"
   by (metis fres_li_prop li_fres_prop)
 
 lemma bres_li_defl: "bres (li i) x \<le> x"
@@ -516,10 +495,10 @@ lemma bres_li_defl: "bres (li i) x \<le> x"
 lemma fres_li_defl: "fres x (li i) \<le> x"
   using li_fres_canc1 li_fres_prop by auto
 
-lemma bres_li_zero: "bres (li i) 0 = 0"
+lemma bres_li_zero [simp]: "bres (li i) 0 = 0"
   by (metis bres_li_prop li1)
   
-lemma fres_li_zero: "fres 0 (li i) = 0"
+lemma fres_li_zero [simp]: "fres 0 (li i) = 0"
   by (simp add: fres_li_defl join.bot.extremum_uniqueI)
 
 lemma bres_iso: "x \<le> y \<Longrightarrow> bres z x \<le> bres z y"
@@ -528,36 +507,36 @@ lemma bres_iso: "x \<le> y \<Longrightarrow> bres z x \<le> bres z y"
 lemma fres_iso: "x \<le> y \<Longrightarrow> fres x z \<le> fres y z"
   using dual_order.trans fres_adj by blast
 
-lemma cyl_idem: "cyl i (cyl i x) = cyl i x"
-  by (metis antisym bres_li_prop fres_li_prop li_bres_prop li_fres_canc1 li_fres_canc2 mult.assoc)
+lemma cyl_idem [simp]: "cyl i (cyl i x) = cyl i x"
+  by (metis bres_li_prop fres_li_prop li_bres_prop li_fres_prop mult.assoc)
 
 lemma dcyl_idem: "dcyl i (dcyl i x) = dcyl i x"
-  by (simp add: bres_bres_li bres_fres_comm fres_fres_li)
+  by (simp add: bres_fres_comm)
 
-lemma cyl_dcyl: "cyl i (dcyl i x) = dcyl i x"
+lemma cyl_dcyl [simp]: "cyl i (dcyl i x) = dcyl i x"
   by (metis bres_fres_comm li_bres_prop li_fres_prop)
 
-lemma dyl_cyl: "dcyl i (cyl i x) = cyl i x"
+lemma dyl_cyl [simp]: "dcyl i (cyl i x) = cyl i x"
   by (metis bres_li_prop fres_li_prop mult.assoc)
 
 lemma cyl_dcyl_adj: "(cyl i x \<le> y) = (x \<le> dcyl i y)"
   using bres_adj fres_adj by blast
 
 lemma dcyl_defl: "dcyl i x \<le> x"
-  by (metis (no_types, hide_lams) bres_adj dual_order.trans fres_adj li2 mult_onel mult_oner order_refl)
+  using bres_li_defl fres_li_defl order.trans by blast
 
 lemma dcyl_le_cyl: "dcyl i x \<le> cyl i x"
-  by (metis (mono_tags, lifting) dcyl_defl inf.orderE le_infI2 li2 mult_isor mult_onel mult_oner phl_cons2 phl_skip)
+  by (metis cyl_dcyl_adj fres_li_defl fres_li_prop li_bres_swap mult_double_iso)
 
 lemma dcyl_ij_comm: "dcyl i (dcyl j x) = dcyl j (dcyl i x)"
   apply (rule antisym)
   by (smt li5 liberation_action_lattice_zerol.cyl_dcyl liberation_action_lattice_zerol.cyl_dcyl_adj liberation_action_lattice_zerol.dcyl_defl liberation_action_lattice_zerol_axioms mult.assoc)+
 
-lemma "cyl i (dcyl j x) \<le> dcyl j (cyl i x)"
-  by (smt liberation_action_lattice_zerol.cyl_dcyl liberation_action_lattice_zerol.cyl_dcyl_adj liberation_action_lattice_zerol.dcyl_defl liberation_action_lattice_zerol.dcyl_ij_comm liberation_action_lattice_zerol.dyl_cyl liberation_action_lattice_zerol_axioms order.trans)
+lemma cyl_dcyl_swap: "cyl i (dcyl j x) \<le> dcyl j (cyl i x)"
+  by (metis bres_adj bres_iso cyl_dcyl_adj dcyl_ij_comm fres_iso li_fres_canc2)
 
-lemma "dcyl i 1 = 0"
-  by (simp add: bres_li_zero i10)
+lemma dcyl_zero [simp]: "dcyl i 1 = 0"
+  by (simp add:  i10)
 
 lemma dcyl_add: "dcyl i (x + dcyl i y) = dcyl i x + dcyl i y"
   (*nitpick*)
@@ -568,5 +547,7 @@ lemma dcyl_kplus: "(dcyl i x)\<^sup>\<oplus> \<le> dcyl i (x\<^sup>\<oplus>)"
 
 lemma dcyl_kplus_prop [simp]: "dcyl i ((dcyl i x)\<^sup>\<oplus>) = (dcyl i x)\<^sup>\<oplus>"
   by (metis antisym dcyl_defl dcyl_idem dcyl_kplus)
+
+end
 
 end
