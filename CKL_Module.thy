@@ -8,7 +8,9 @@ theory CKL_Module
 begin
 
 text \<open>This component shows that the semidirect product of a Kleene lattice and a 
-lattice with a least element forms a weak Kleene lattice.\<close>
+lattice with a least element forms a weak Kleene lattice. It also shows that the semidirect product 
+of a liberation Kleene lattice and a lattice with a least element forms a weak liberation Kleene lattice.
+This is useful for establishing properties of relational fault models.\<close>
 
 locale l_monoid_module =
   fixes act :: "'a::l_monoid \<Rightarrow> 'b::bounded_lattice_bot \<Rightarrow> 'b" ("\<alpha>") 
@@ -25,8 +27,19 @@ lemma act_zero [simp]: "\<alpha> x \<bottom> = \<bottom>"
 
 end
 
+declare[[show_types]]
+declare[[show_sorts]]
+
 locale kleene_lattice_module = l_monoid_module \<alpha> for \<alpha> +
   assumes m6: "p \<squnion> \<alpha> (x::'a::kleene_lattice) q \<le> q \<Longrightarrow> \<alpha> (x\<^sup>\<star>) p \<le> q"
+
+locale cylindric_kleene_lattice_module = cylindric_kleene_lattice cyl + kleene_lattice_module \<alpha> for cyl \<alpha> +
+  constrains cyl :: "'a \<Rightarrow> 'b::kleene_lattice \<Rightarrow> 'b"
+  and \<alpha> :: "'b \<Rightarrow> 'c::bounded_lattice_bot \<Rightarrow> 'c"
+
+locale liberation_kleene_lattice_module = liberation_kleene_lattice lib + kleene_lattice_module \<alpha> for lib \<alpha> +
+  constrains lib :: "'a \<Rightarrow> 'b::kleene_lattice"
+  and \<alpha> :: "'b \<Rightarrow> 'c::bounded_lattice_bot \<Rightarrow> 'c"
 
 definition "plus_prod (x::'a::l_monoid \<times> 'b::bounded_lattice_bot) y = (fst x + fst y,snd x \<squnion> snd y)"
 
@@ -118,6 +131,47 @@ lemma star_prod_inductl: "le_prod (sd_prod x y) y \<Longrightarrow> le_prod (sd_
 lemma star_prod_inductr: "le_prod (sd_prod y x) y \<Longrightarrow> le_prod (sd_prod y (star_prod x)) y"
   unfolding le_prod_def sd_prod_def star_prod_def
   by (metis (no_types, lifting) conway.dagger_plus_one distrib_left fst_conv join.sup.orderE m1 mult.right_neutral snd_conv star_inductr_var_equiv)
+
+end
+
+context cylindric_kleene_lattice_module
+begin
+
+definition "cyl_prod i x = (cyl i (fst x), \<alpha> (cyl i 1) (snd x))"
+
+lemma cyl_prod_prop: "cyl i (fst x) = cyl i 1 \<cdot> (fst x) \<cdot> cyl i 1 \<Longrightarrow> cyl_prod i x = sd_prod (cyl i 1, \<bottom>) (sd_prod x (cyl i 1, \<bottom>))"
+  unfolding cyl_prod_def sd_prod_def by (simp add: mult.assoc)
+
+end
+
+context liberation_kleene_lattice_module
+begin
+
+lemma l1_prod: "sd_prod (lib i, \<bottom>) zero_prod = zero_prod"
+  unfolding sd_prod_def zero_prod_def by simp
+
+lemma l2_prod: "le_prod one_prod (lib i, \<bottom>::'c::bounded_lattice_bot)"
+  unfolding le_prod_def one_prod_def by (simp add: l2)
+
+lemma l3_prod: 
+  assumes "\<alpha> (lib i) (p \<sqinter> \<alpha> (lib i) q) = \<alpha> (lib i) p \<sqinter> \<alpha> (lib i) q"
+  shows "sd_prod (lib i,\<bottom>) (meet_prod (x,p) (sd_prod (lib i,\<bottom>) (y,q))) = meet_prod (sd_prod (lib i,\<bottom>) (x,p)) (sd_prod (lib i,\<bottom>) (y,q))" 
+  unfolding sd_prod_def meet_prod_def by (simp add: assms l3)
+
+lemma l4_prod: "sd_prod (meet_prod (x,p) (sd_prod (y,q) (lib i,\<bottom>))) (lib i,\<bottom>) = meet_prod (sd_prod (x,p) (lib i,\<bottom>)) (sd_prod (y,q) (lib i,\<bottom>))"  
+  unfolding sd_prod_def meet_prod_def by (simp add: l4)
+
+lemma l5_prod: "sd_prod (lib i,\<bottom>) (lib j,\<bottom>) = sd_prod (lib j,\<bottom>) (lib i,\<bottom>)"
+  unfolding sd_prod_def by (simp add: l5)
+
+lemma l6_prod: "i \<noteq> i \<Longrightarrow> meet_prod (lib i,\<bottom>) (lib j,\<bottom>) = one_prod"
+  unfolding meet_prod_def one_prod_def by simp
+
+lemma l7_prod: "sd_prod (lib (i::'a),\<bottom>) (meet_prod (lib j,\<bottom>) (lib k,\<bottom>)) = meet_prod (sd_prod (lib i,\<bottom>) (lib j,\<bottom>)) (sd_prod (lib i,\<bottom>) (lib k,\<bottom>))" 
+  unfolding sd_prod_def meet_prod_def by (simp add: l7)
+
+lemma l8_prod: "sd_prod (meet_prod (lib i,\<bottom>) (lib j,\<bottom>)) (lib k,\<bottom>) = meet_prod (sd_prod (lib i,\<bottom>) (lib k,\<bottom>)) (sd_prod (lib j,\<bottom>) (lib k,\<bottom>))" 
+  unfolding sd_prod_def meet_prod_def by (simp add: l8)
 
 end
 

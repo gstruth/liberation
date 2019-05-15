@@ -171,6 +171,9 @@ lemma "(\<forall> i x. cyl i x = cyl i 1 \<cdot> x \<cdot> cyl i 1) \<Longrighta
 
 end
 
+locale cylindric_l_monoid = cylindric_l_monoid_zerol cyl for cyl +
+  constrains cyl :: "'a \<Rightarrow> 'b::l_monoid \<Rightarrow> 'b"
+
 text \<open>Next we define weak cylindric Kleene lattices and prove some properties.\<close> 
 
 locale cylindric_kleene_lattice_zerol = cylindric_l_monoid_zerol +
@@ -230,6 +233,9 @@ lemma "x < 1 \<Longrightarrow> cyl i x = x"
   oops
 
 end
+
+locale cylindric_kleene_lattice = cylindric_kleene_lattice_zerol cyl for cyl +
+  constrains cyl :: "'a \<Rightarrow> 'b::kleene_lattice \<Rightarrow> 'b"
 
 text \<open>We formalise a dual inner cylindrification in cylindric Kleene lattices.\<close>
 
@@ -338,8 +344,8 @@ end
 
 text \<open>Next we turn to weak liberation Kleene lattices.\<close>
 
-locale liberation_kleene_lattice_zerol = 
-  fixes lib :: "'a \<Rightarrow> 'b::kleene_lattice_zerol"
+locale liberation_l_monoid_zerol = 
+  fixes lib :: "'a \<Rightarrow> 'b::l_monoid_zerol"
   assumes l1 [simp]: "lib i \<cdot> 0 = 0"
   and l2: "1 \<le> lib i"
   and l3: "lib i \<cdot> (x \<sqinter> ((lib i) \<cdot> y)) = ((lib i) \<cdot> x) \<sqinter> ((lib i) \<cdot> y)"
@@ -377,13 +383,23 @@ lemma lib_seq2: "lib i \<cdot> lib i \<cdot> x \<cdot> lib i \<cdot> y \<cdot> l
 lemma  lib_meet: "lib i \<cdot> (x \<sqinter> (lib i \<cdot> y \<cdot> lib i)) \<cdot> lib i = (lib i \<cdot> x \<cdot> lib i) \<sqinter> (lib i \<cdot> y \<cdot> lib i)"
   by (metis l3 l4 mult.assoc)
 
+end
+
+locale liberation_l_monoid = liberation_l_monoid_zerol lib for lib +
+  constrains lib :: "'a \<Rightarrow> 'b::l_monoid"
+
+locale liberation_kleene_lattice_zerol = liberation_l_monoid_zerol lib for lib +
+  constrains lib :: "'a \<Rightarrow> 'b::kleene_lattice_zerol"
+
+begin
+
 lemma lib_kplus_prop1 [simp]: "(lib i \<cdot> x \<cdot> lib i)\<^sup>\<oplus> = (lib i \<cdot> x)\<^sup>\<oplus> \<cdot> lib i"
   by (simp add: conway.dagger_slide kplus_def mult.assoc)
 
 lemma lib_star_prop: "lib i \<cdot> x\<^sup>\<oplus> \<cdot> lib i \<le> (lib i \<cdot> x)\<^sup>\<oplus> \<cdot> lib i"
 proof -
   have "1 \<le> lib i"
-    by (simp add: liberation_kleene_lattice_zerol.l2 liberation_kleene_lattice_zerol_axioms)
+    by (simp add: l2)
   then have "(x + x)\<^sup>\<star> \<cdot> (lib i \<cdot> (x \<cdot> x\<^sup>\<star>) + lib i \<cdot> (x \<cdot> x\<^sup>\<star>))\<^sup>\<star> = (lib i \<cdot> x)\<^sup>\<star>"
     by (metis (no_types) distrib_right join.sup_idem less_eq_def mult.assoc mult.left_neutral star_denest_var)
   then have "lib i \<cdot> x \<cdot> (lib i \<cdot> x)\<^sup>\<star> = (lib i \<cdot> (x \<cdot> x\<^sup>\<star>))\<^sup>\<oplus>"
@@ -412,8 +428,10 @@ lemma "lib i \<cdot> lib j = lib i + lib j"
   (*nitpick*)
   oops
 
-
 end
+
+locale liberation_kleene_lattice = liberation_kleene_lattice_zerol lib for lib +
+  constrains lib :: "'a \<Rightarrow> 'b::kleene_lattice"
 
 text \<open>Finally we formalise liberation action lattices. Ultimately this locale should be intergrated
 whith the residuated lattice components in the AFP.\<close>
