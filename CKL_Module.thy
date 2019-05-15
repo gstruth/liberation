@@ -27,9 +27,6 @@ lemma act_zero [simp]: "\<alpha> x \<bottom> = \<bottom>"
 
 end
 
-declare[[show_types]]
-declare[[show_sorts]]
-
 locale kleene_lattice_module = l_monoid_module \<alpha> for \<alpha> +
   assumes m6: "p \<squnion> \<alpha> (x::'a::kleene_lattice) q \<le> q \<Longrightarrow> \<alpha> (x\<^sup>\<star>) p \<le> q"
 
