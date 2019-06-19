@@ -226,7 +226,7 @@ proof-
     by force
 qed
 
-text \<open>Finally we provide two counterexamples and provide a relationship that is used in the definition of assignments.\<close>
+text \<open>Finally we provide three counterexamples and provide a relationship that is used in the definition of assignments.\<close>
 
 lemma "cyl i Id ; cyl j Id = cyl i Id \<union> cyl j Id"
   (*nitpick*)
@@ -239,6 +239,13 @@ lemma "cyl i Id ; (cyl i R \<inter> Id) = cyl i R"
   (*nitpick*)
   oops
 
+lemma "cyl i Id = Id"
+  (*nitpick*)
+  oops
 
+text \<open>We prove a property of frames.\<close>
+
+lemma "R \<inter> cyl i Id = {(a,b) \<in> R. \<exists>c. a = fun_upd b i c}"
+  unfolding cyl_def Id_def fun_upd_def by force
 
 end

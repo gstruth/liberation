@@ -169,6 +169,10 @@ lemma "(\<forall> i x. cyl i x = cyl i 1 \<cdot> x \<cdot> cyl i 1) \<Longrighta
   (*nitpick*)
   oops
 
+lemma "cyl i 1 = (1::'b::l_monoid_zerol)"
+  (*nitpick[show_all]*)
+  oops
+
 end
 
 locale cylindric_l_monoid = cylindric_l_monoid_zerol cyl for cyl +
