@@ -61,7 +61,7 @@ qed
 definition eq_uptop :: "'a \<Rightarrow> (('a \<Rightarrow> 'b) \<times> ('a \<Rightarrow> 'b)) \<Rightarrow> (('a \<Rightarrow> 'b) \<times> ('a \<Rightarrow> 'b)) \<Rightarrow> bool" where 
   "eq_uptop i fp gp = (\<forall>j. i \<noteq> j \<longrightarrow> ((fst fp) j = (fst gp) j \<and> (snd fp) j = (snd gp) j))" 
 
-lemma eq_uptop_upto: "eq_uptop i (f,g) (h,k) = (eq_upto i f h \<and> eq_upto i g k)"
+lemma eq_uptop_upto [simp]: "eq_uptop i (f,g) (h,k) = (eq_upto i f h \<and> eq_upto i g k)"
   unfolding eq_uptop_def eq_upto_def by force
 
 lemma eq_uptop_ref: "eq_uptop i (f,g) (f,g)"
@@ -79,13 +79,16 @@ definition cyl :: "'a \<Rightarrow> ('a,'b) crel \<Rightarrow> ('a,'b) crel" whe
   "cyl i R = {(f,g). \<exists>h k. (\<forall>j. i \<noteq> j \<longrightarrow> (f j = h j \<and> g j = k j)) \<and> (h,k) \<in> R}" 
 
 lemma cyl_eq_uptop1: "cyl i R = {fp. \<exists>gp. eq_uptop i fp gp \<and> gp \<in> R}"
-  unfolding cyl_def  eq_uptop_def by (safe, auto)
+  unfolding cyl_def eq_uptop_def by (safe, auto)
 
 lemma cyl_eq_uptop2: "cyl i R = {(f,g). \<exists>h k. eq_uptop i (f,g) (h,k) \<and> (h,k) \<in> R}"
   unfolding cyl_def eq_uptop_def by simp
 
 lemma cyl_Id: "cyl i Id = {(f,g). eq_upto i f g}"
   unfolding cyl_def Id_def eq_upto_def by fastforce
+
+lemma cyl_Id_var: "(a,b) \<in> cyl i Id = eq_upto i a b"
+  by (simp add: cyl_Id)
 
 lemma cyl_id_rel: "cyl i Id ; R = {(a,b). \<exists>c. eq_upto i a c \<and> (c,b) \<in> R}"
 proof-
@@ -131,7 +134,7 @@ qed
 
 text \<open>We derive the axioms of liberation l-monoids by using this fundamental identity.\<close>
 
-lemma cyl_Id_emp: "cyl i Id ; {} = {}"
+lemma cyl_Id_emp [simp]: "cyl i Id ; {} = {}"
   by simp
 
 lemma Id_cyl_Id: "Id \<subseteq> cyl i Id"
@@ -167,7 +170,7 @@ proof-
     by blast
 qed
 
-lemma cyl_Id_idem: "cyl i Id ; cyl i Id = cyl i Id"
+lemma cyl_Id_idem [simp]: "cyl i Id ; cyl i Id = cyl i Id"
   by (metis R_O_Id cyl_Id_rep)
 
 lemma cyl_Id_comm: "cyl i Id ; cyl j Id = cyl j Id ; cyl i Id"
@@ -232,6 +235,13 @@ lemma "cyl i Id ; cyl j Id = cyl i Id \<union> cyl j Id"
   (*nitpick*)
   oops
 
+lemma "trancl (cyl i Id \<union> cyl j Id) = (cyl i Id \<union> cyl j Id)"
+  (*nitpick*)
+  oops
+
+lemma "cyl i Id \<union> cyl j Id \<subseteq> cyl i Id ; cyl j Id"
+  using Id_cyl_Id by fastforce
+
 lemma "P \<subseteq> Id \<Longrightarrow> cyl i Id ; (cyl i P \<inter> Id) = cyl i P"
   by (smt Id_cyl_Id O_assoc R_O_Id cyl_Id_inter cyl_Id_rep dual_order.trans inf.orderE inf_commute inter_cyl_Id)
 
@@ -243,9 +253,27 @@ lemma "cyl i Id = Id"
   (*nitpick*)
   oops
 
+lemma cyl_Id_comp: "cyl i (cyl j Id) = cyl i Id ; cyl j Id"
+proof- 
+  have "cyl i (cyl j Id) = cyl i Id ; cyl j Id ; cyl i Id"
+    by (meson cyl_Id_rep)
+  also have "... = cyl i Id ; cyl i Id ; cyl j Id"
+    by (metis O_assoc cyl_Id_comm)
+  also have "... = cyl i Id ; cyl j Id"
+    by simp
+  finally show ?thesis.
+qed
+
+lemma cyl_Id_interp: "cyl i (cyl j Id \<inter> cyl k Id) = (cyl i Id ; cyl j Id) \<inter> (cyl i Id ; cyl k Id)"
+  by (metis R_O_Id cyl_Id_Id cyl_Id_comp cyl_Id_inter_distl inf.idem)
+
+
 text \<open>We prove a property of frames.\<close>
 
 lemma "R \<inter> cyl i Id = {(a,b) \<in> R. \<exists>c. a = fun_upd b i c}"
   unfolding cyl_def Id_def fun_upd_def by force
+
+lemma cyl_Id_meet_pres: "cyl i Id ; cyl j Id \<inter> cyl i Id ; cyl k Id \<subseteq> cyl i (cyl j Id \<inter> cyl k Id)"
+  by (metis R_O_Id cyl_Id_Id cyl_Id_comp cyl_Id_inter_distl inf.idem set_eq_subset)
 
 end

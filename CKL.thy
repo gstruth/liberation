@@ -2,7 +2,7 @@ section \<open>Cylindric Kleene Lattices and Liberation Kleene Lattices\<close>
 
 text \<open>Using this mathematical component requires downloading the Archive of Formal Proofs.\<close>
 
-theory CKL
+theory CKL2
   imports Main  "~~/src/HOL/Library/Lattice_Syntax" 
           Kleene_Algebra.Kleene_Algebra 
 
@@ -39,6 +39,9 @@ class l_monoid_zerol = dioid_one_zerol + semilattice_inf +
 
 begin
 
+sublocale lmon_lat: lattice _ _ _ "(+)"
+  by unfold_locales
+
 lemma meet_zeror [simp]: "x \<sqinter> 0 = 0"
   by (simp add: inf_absorb2)
   
@@ -49,6 +52,16 @@ class residuated_l_monoid_zerol = l_monoid_zerol +
   and bres :: "'a \<Rightarrow> 'a \<Rightarrow> 'a"
   assumes fres_adj: "(x \<cdot> y \<le> z) = (x \<le> fres z y)"
   and bres_adj: "(x \<cdot> y \<le> z) = (y \<le> bres x z)"
+
+class distrib_l_monoid_zerol = l_monoid_zerol + distrib_lattice
+
+begin
+
+sublocale distrib_lattice "(\<sqinter>)" "(\<le>)" "(<)" "(+)"
+  apply unfold_locales
+  by (metis add_commute local.join.le_supI local.join.sup_ge2 local.sup_inf_distrib1 local.sup_unique)
+
+end
 
 class kleene_lattice_zerol = l_monoid_zerol + kleene_algebra_zerol
 
@@ -77,7 +90,7 @@ class action_lattice = action_lattice_zerol + dioid_one_zero
 text \<open>Next we define weak cylindric l-monoids and prove some basic properties.\<close>
 
 locale cylindric_l_monoid_zerol = 
-  fixes cyl :: "'a \<Rightarrow> 'b::l_monoid_zerol \<Rightarrow> 'b"
+  fixes cyl :: "'a::linorder \<Rightarrow> 'b::l_monoid_zerol \<Rightarrow> 'b"
   assumes cyl_ext: "x \<le> cyl i x"
   and cyl_sup_add: "cyl i (x + y) = (cyl i x) + (cyl i y)"
   and cyl_multl: "cyl i ((cyl i x) \<cdot> y) = (cyl i x) \<cdot> (cyl i y)"
@@ -86,12 +99,10 @@ locale cylindric_l_monoid_zerol =
   and cyl_zero [simp]: "cyl i 0 = 0"
   and cyl_comm: "cyl i (cyl j x) = cyl j (cyl i x)"
   and cyl_id_meet: "i \<noteq> j \<Longrightarrow> (cyl i 1) \<sqinter> (cyl j 1) = 1"
-  and cyl_id_meet_pres: "cyl i ((cyl j 1) \<sqinter> (cyl k 1)) = (cyl i (cyl j 1)) \<sqinter> (cyl i (cyl k 1))"
+  and cyl_id_meet_pres: "(cyl i 1 \<cdot> cyl j 1) \<sqinter> (cyl i 1 \<cdot> cyl k 1) \<le> cyl i (cyl j 1 \<sqinter> cyl k 1)"
+  and cyl_id_seq: "cyl i (cyl j 1) \<le> cyl i 1 \<cdot> cyl j 1"
 
-begin 
-
-lemma cyl_one_comm: "j \<noteq> k \<Longrightarrow> (cyl i (cyl j 1)) \<sqinter> (cyl i (cyl k 1)) = cyl i 1"
-  by (metis cyl_id_meet cyl_id_meet_pres)
+begin
 
 lemma cyl_zero_iff: "(cyl i x = 0) = (x = 0)"
   by (metis cyl_ext cyl_zero join.bot.extremum_unique)
@@ -138,6 +149,47 @@ lemma cyl_conj_var: "(cyl i x \<sqinter> cyl j y = 0) = (cyl j x \<sqinter> cyl 
 lemma cyl_1_zero [simp]: "cyl i 1 \<cdot> 0 = 0"
   by (metis cyl_zero cyl_1_unl)
 
+lemma cyl_id_seq_eq: "cyl i (cyl j 1) = cyl i 1 \<cdot> cyl j 1"
+  by (simp add: cyl_id_seq cyl_rel_prop_var1 dual_order.antisym)
+
+lemma cyl_id_comm: "(cyl i 1) \<cdot> (cyl j 1) = (cyl j 1) \<cdot> (cyl i 1)"
+  by (metis cyl_comm cyl_id_seq_eq)
+
+lemma cyl_id_meet_pres_eq: "cyl i (cyl j 1 \<sqinter> cyl k 1) = (cyl i 1 \<cdot> cyl j 1) \<sqinter> (cyl i 1 \<cdot> cyl k 1)"
+  apply (rule antisym)
+  apply (metis cyl_ext cyl_id_meet cyl_id_seq_eq cyl_iso cyl_rel_prop_var1 inf.idem le_inf_iff)
+  by (simp add: cyl_id_meet_pres)
+
+lemma cyl_id_meet_pres_var: "cyl i (cyl j 1 \<sqinter> cyl k 1) = cyl i (cyl j 1) \<sqinter> cyl i (cyl k 1)"
+  unfolding cyl_id_meet_pres_eq
+  by (smt cyl_ext cyl_id_meet cyl_id_meet_pres_eq cyl_id_seq_eq cyl_rel_prop_var1 inf.absorb2) 
+
+lemma cyl_id_meet_pres_var2: "cyl i (cyl j 1 \<sqinter> cyl k 1) = cyl i 1 \<cdot> (cyl j 1 \<sqinter> cyl k 1)"
+  by (smt cyl_1_unl cyl_id_meet cyl_id_meet_pres_eq inf_idem mult_onel mult_oner)
+
+lemma cyl_id_meet_pres_var3: "(cyl i 1 \<cdot> cyl j 1) \<sqinter> (cyl i 1 \<cdot> cyl k 1) = cyl i 1 \<cdot> (cyl j 1 \<sqinter> cyl k 1)"
+  by (metis cyl_id_meet cyl_id_meet_pres_eq inf.idem mult_oner)
+
+lemma cyl_one_comm: "j \<noteq> k \<Longrightarrow> cyl i (cyl j 1) \<sqinter> cyl i (cyl k 1) = cyl i 1"
+  by (metis cyl_id_meet cyl_id_meet_pres_var)
+
+lemma cyl_id_meet_presl: "cyl i 1 \<cdot> ((cyl i 1 \<cdot> x) \<sqinter> (cyl i 1 \<cdot> y)) = (cyl i 1 \<cdot> x) \<sqinter> (cyl i 1 \<cdot> y)" 
+  apply (rule antisym)
+  apply (metis (no_types, lifting) cyl_1_unl cyl_rel_prop_var1 le_inf_iff lmon_lat.inf_sup_ord(1) lmon_lat.inf_sup_ord(2) mult.assoc mult_isol_var mult_oner)
+  by (metis cyl_ext mult_isor mult_onel)
+
+lemma cyl_id_meet_presr: "((x \<cdot> cyl i 1) \<sqinter> (y \<cdot> cyl i 1)) \<cdot> cyl i 1 = (x \<cdot> cyl i 1) \<sqinter> (y \<cdot> cyl i 1)" 
+  apply (rule antisym)
+  apply (metis (no_types, lifting) cyl_1_idem le_inf_iff lmon_lat.inf_sup_ord(1) lmon_lat.inf_sup_ord(2) mult.assoc mult_double_iso mult_onel)
+  by (metis cyl_ext mult_isol mult_oner)
+
+lemma cyl_id_meet_preslr: "cyl i 1 \<cdot> ((cyl i 1 \<cdot> x \<cdot> cyl i 1) \<sqinter> (cyl i 1 \<cdot> y \<cdot> cyl i 1)) \<cdot> cyl i 1 = (cyl i 1 \<cdot> x \<cdot> cyl i 1) \<sqinter> (cyl i 1 \<cdot> y \<cdot> cyl i 1)"
+  by (metis (no_types, lifting) cyl_id_meet_presl cyl_id_meet_presr mult.assoc) 
+
+lemma cyl_id_add_comp: "cyl i 1 + cyl j 1 \<le> cyl i 1 \<cdot> cyl j 1"
+  by (metis cyl_ext cyl_id_seq_eq cyl_iso join.le_sup_iff)
+
+
 lemma 
   assumes "\<forall>(x::'b) y. x \<le> 1 \<and> y \<le> 1 \<longrightarrow> x \<cdot> y = x \<sqinter> y"
   and "\<forall>(x::'b). x \<le> 1 \<longrightarrow> (\<exists>y. y \<le> 1 \<and> x + y = 1)"
@@ -146,26 +198,7 @@ lemma
   (*nitpick*)
   oops
 
-lemma cyl_inter_one: "x \<le> 1 \<Longrightarrow> cyl i (cyl i x \<sqinter> 1) = cyl i x"
-  by (metis absorp2 cyl_inf cyl_sup_add inf_commute join.le_iff_sup)
-
-lemma "x \<le> 1 \<Longrightarrow> cyl i x = cyl i 1 \<cdot> x \<cdot> cyl i 1 \<Longrightarrow> cyl i 1 \<cdot> (cyl i x \<sqinter> 1) = cyl i x"
-  (*nitpick*)
-  oops
-
-lemma "x \<le> 1 \<Longrightarrow> cyl i (cyl j x \<sqinter> 1) = cyl j (cyl i x \<sqinter> 1)"
-  (*nitpick*)
-  oops
-
-lemma "(cyl i 1) \<cdot> (cyl j 1) = (cyl j 1) \<cdot> (cyl i 1)"
-  (*nitpick*)
-  oops
-
 lemma "(cyl i x = x) = (cyl i 1 \<cdot> x \<cdot> cyl i 1 = x)"
-  (*nitpick*)
-  oops
-
-lemma "(\<forall> i x. cyl i x = cyl i 1 \<cdot> x \<cdot> cyl i 1) \<Longrightarrow> cyl i 1 \<cdot> cyl j 1 = cyl j 1 \<cdot> cyl i 1"
   (*nitpick*)
   oops
 
@@ -173,10 +206,60 @@ lemma "cyl i 1 = (1::'b::l_monoid_zerol)"
   (*nitpick[show_all]*)
   oops
 
+lemma cyl_one_comm_var: "j \<noteq> k \<Longrightarrow> cyl i 1 \<cdot> cyl j 1 \<sqinter> cyl i 1 \<cdot> cyl k 1 = cyl i 1"
+  (*nitpick*)
+  oops
+
+lemma cyl_inter_one: "x \<le> 1 \<Longrightarrow> cyl i (cyl i x \<sqinter> 1) = cyl i x"
+  by (metis absorp2 cyl_inf cyl_sup_add inf_commute join.le_iff_sup)
+
+lemma cyl_inter_one_comm: "x \<le> 1 \<Longrightarrow> cyl i (cyl j x \<sqinter> 1) = cyl j (cyl i x \<sqinter> 1)"
+  (*nitpick*)
+  oops
+
+lemma "cyl i 1 + cyl j 1 = cyl i 1 \<cdot> cyl j 1"
+  (*nitpick*)
+  oops
+
+lemma "i \<noteq> j \<Longrightarrow> cyl i x \<noteq> cyl j x"
+  nitpick
+  oops
+
+lemma "i \<noteq> j \<Longrightarrow> cyl i 1 \<noteq> cyl j 1"
+  nitpick
+  oops
+
 end
 
+locale distrib_cylindric_l_monoid_zerol = cylindric_l_monoid_zerol cyl for cyl +
+  constrains cyl :: "'a::linorder \<Rightarrow> 'b::distrib_l_monoid_zerol \<Rightarrow> 'b"
+
 locale cylindric_l_monoid = cylindric_l_monoid_zerol cyl for cyl +
-  constrains cyl :: "'a \<Rightarrow> 'b::l_monoid \<Rightarrow> 'b"
+  constrains cyl :: "'a::linorder \<Rightarrow> 'b::l_monoid \<Rightarrow> 'b"
+
+begin
+
+lemma "cyl i 1 \<cdot> x \<cdot> cyl i 1 = cyl i x"
+  (*nitpick[show_all]*)
+  oops
+
+lemma "(cyl i x = x) = (cyl i 1 \<cdot> x \<cdot> cyl i 1 = x)"
+  (*nitpick*)
+  oops
+
+lemma "(cyl i 1 \<cdot> x \<cdot> cyl i 1 = x) = (cyl i 1 \<cdot> x = x)"
+  (*nitpick*)
+  oops
+
+lemma "(cyl i 1 \<cdot> x \<cdot> cyl i 1 = x) = (x \<cdot> cyl i 1 = x)"
+  (*nitpick*)
+  oops
+
+lemma "(cyl i 1 \<cdot> x = x) = (x \<cdot> cyl i 1 = x)"
+  (*nitpick*)
+  oops
+
+end
 
 text \<open>Next we define weak cylindric Kleene lattices and prove some properties.\<close> 
 
@@ -212,6 +295,15 @@ lemma cyl_1_prop: "(cyl i 1)\<^sup>\<star> \<le> cyl i 1"
 lemma cyl_star_id [simp]: "(cyl i 1)\<^sup>\<star> = cyl i 1"
   by (simp add: cyl_1_prop order_class.order.antisym)
 
+lemma cyl_plus_absorb: "cyl i 1 \<cdot> x\<^sup>\<oplus> \<cdot> cyl i 1 \<le> (cyl i 1 \<cdot> x)\<^sup>\<oplus> \<cdot> cyl i 1"
+  by (smt conway.dagger_slide cyl_star_id kplus_def mult.assoc mult_isol star_denest_var_2 star_denest_var_4 star_ext)
+
+lemma cyl_star_add_comp: "(cyl i 1 + cyl j 1)\<^sup>\<star> = cyl i 1 \<cdot> cyl j 1"
+  by (metis church_rosser cyl_id_comm cyl_id_seq_eq cyl_rel_prop_var1 cyl_star_id)
+
+lemma cyl_plus_add_comp: "(cyl i 1 + cyl j 1)\<^sup>\<oplus> = cyl i 1 \<cdot> cyl j 1"
+  by (metis (no_types, lifting) bubble_sort cyl_ext cyl_id_comm cyl_id_seq_eq cyl_rel_prop_var1 cyl_star_id join.sup_ge2 kplus_def order_trans sup_id_star1)
+
 lemma "(cyl i 1 \<cdot> x \<cdot> cyl i 1) \<sqinter> (cyl i 1 \<cdot> y \<cdot> cyl i 1) = cyl i 1 \<cdot> (x \<sqinter> (cyl i 1 \<cdot> y \<cdot> cyl i 1)) \<cdot> cyl i 1"
   (*nitpick*)
   oops
@@ -224,22 +316,15 @@ lemma  "(\<forall>x. cyl i x = cyl i 1 \<cdot> x \<cdot> cyl i 1) \<Longrightarr
   (*nitpick*)
   oops
 
-lemma "cyl i 1 \<cdot> x\<^sup>\<oplus> \<cdot> cyl i 1 \<le> (cyl i 1 \<cdot> x)\<^sup>\<oplus> \<cdot> cyl i 1"
-  (*nitpick*)
-  oops
-
-lemma "x \<le> 1 \<Longrightarrow> \<not>(\<exists>y. x = cyl i y)"
-  (*nitpick*)
-  oops
-
-lemma "x < 1 \<Longrightarrow> cyl i x = x"
+lemma "(cyl i 1 + cyl j 1)\<^sup>\<star> = (cyl i 1 + cyl j 1)"
   (*nitpick*)
   oops
 
 end
 
+
 locale cylindric_kleene_lattice = cylindric_kleene_lattice_zerol cyl for cyl +
-  constrains cyl :: "'a \<Rightarrow> 'b::kleene_lattice \<Rightarrow> 'b"
+  constrains cyl :: "'a::linorder \<Rightarrow> 'b::kleene_lattice \<Rightarrow> 'b"
 
 text \<open>We formalise a dual inner cylindrification in cylindric Kleene lattices.\<close>
 
@@ -255,7 +340,7 @@ locale dual_cylindric_kleene_lattice =
   and dcy_one: "dcy i 1 = 0"
   and cy_kplus : "cy i (x\<^sup>\<oplus>) \<le> (cy i x)\<^sup>\<oplus>"
   and l6: "i \<noteq> j \<Longrightarrow> (cy i 1) \<sqinter> (cy j 1) = 1"
-  and cyl_id_meet_pres: "cy i ((cy j 1) \<sqinter> (cy k 1)) = (cy i (cy j 1)) \<sqinter> (cy i (cy k 1))"
+  and cyl_id_meet_pres: "cy i 1 \<cdot> cy j 1 \<sqinter> cy i 1 \<cdot> cy k 1 \<le> cy i (cy j 1 \<sqinter> cy k 1)"
 
 begin
 
@@ -344,7 +429,22 @@ lemma dcy_star: "(dcy i x)\<^sup>\<oplus> \<le> dcy i (x\<^sup>\<oplus>)"
 lemma dcy_star_prop [simp]: "dcy i ((dcy i x)\<^sup>\<oplus>) = (dcy i x)\<^sup>\<oplus>"
   by (metis dcy_idem dcy_infl dcy_star eq_iff)
 
+lemma cyl_id_meet_pres_eq: "cy i ((cy j 1) \<sqinter> (cy k 1)) = (cy i (cy j 1)) \<sqinter> (cy i (cy k 1))"
+proof -
+have f1: "\<forall>b ba a bb. bb \<le> cy a b \<or> \<not> bb \<le> cy a (ba \<sqinter> cy a b)"
+  using zy_meet by auto
+have f2: "\<forall>a aa b. b \<sqinter> cy aa (cy a b) = b"
+by (metis cy_infl inf.orderE le_inf_iff)
+  then have "\<forall>a aa. cy aa 1 \<sqinter> (cy aa 1 \<cdot> cy a 1) = cy aa 1 \<cdot> cy a 1"
+using f1 by (metis (no_types) cy_seq1 cyl_id_meet_pres inf.commute inf.orderE mult_onel zy_meet)
+  then have "\<forall>a aa. cy aa 1 \<sqinter> cy a 1 = cy aa 1"
+    using f1 by (metis (no_types) cy_infl cy_seq1 inf.commute inf.orderE mult_onel zy_seq2)
+  then show ?thesis
+    using f2 by (metis inf.commute zy_meet)
+qed
+
 end
+
 
 text \<open>Next we turn to weak liberation Kleene lattices.\<close>
 
@@ -356,8 +456,8 @@ locale liberation_l_monoid_zerol =
   and l4: "(x \<sqinter> (y \<cdot> lib i)) \<cdot> lib i = (x \<cdot> lib i) \<sqinter> (y \<cdot> lib i)"
   and l5: "(lib i) \<cdot> (lib j) = (lib j) \<cdot> (lib i)"
   and l6: "i \<noteq> j \<Longrightarrow> (lib i) \<sqinter> (lib j) = 1"
-  and l7: "lib i \<cdot> (lib j \<sqinter> lib k) = (lib i \<cdot> lib j) \<sqinter> (lib i \<cdot> lib k)"
-  and l8: "(lib i \<sqinter> lib j) \<cdot> lib k = (lib i \<cdot> lib k) \<sqinter> (lib j \<cdot> lib k)"
+  and l7: "(lib i \<cdot> lib j) \<sqinter> (lib i \<cdot> lib k) \<le> lib i \<cdot> (lib j \<sqinter> lib k)"
+  and l8: "(lib i \<cdot> lib k) \<sqinter> (lib j \<cdot> lib k) \<le> (lib i \<sqinter> lib j) \<cdot> lib k"
 
 begin
 
@@ -386,6 +486,15 @@ lemma lib_seq2: "lib i \<cdot> lib i \<cdot> x \<cdot> lib i \<cdot> y \<cdot> l
 
 lemma  lib_meet: "lib i \<cdot> (x \<sqinter> (lib i \<cdot> y \<cdot> lib i)) \<cdot> lib i = (lib i \<cdot> x \<cdot> lib i) \<sqinter> (lib i \<cdot> y \<cdot> lib i)"
   by (metis l3 l4 mult.assoc)
+
+lemma l7_eq: "(lib i \<cdot> lib j) \<sqinter> (lib i \<cdot> lib k) = lib i \<cdot> (lib j \<sqinter> lib k)"
+  by (simp add: antisym l7 mult_isol_var)
+
+lemma l8_eq: "(lib i \<cdot> lib k) \<sqinter> (lib j \<cdot> lib k) = (lib i \<sqinter> lib j) \<cdot> lib k"
+  by (simp add: antisym l8 mult_isor)
+
+lemma cyl10: "lib i \<cdot> lib j \<cdot> lib i = lib i \<cdot> lib j"
+  by (metis l5 lib_idem mult.assoc)
 
 end
 
@@ -423,10 +532,6 @@ lemma lib_cylr: "x\<^sup>\<oplus> \<cdot> lib i \<le> (x \<cdot> lib i)\<^sup>\<
 
 lemma [simp]: "lib i \<cdot> (lib i \<cdot> x)\<^sup>\<oplus> = (lib i \<cdot> x)\<^sup>\<oplus>"
   by (metis (no_types, lifting) kplus_def lib_idem mult.assoc)
-
-lemma "lib i \<cdot> ((lib j) \<sqinter> (lib k)) = (lib i \<cdot> lib j) \<sqinter> (lib i \<cdot> lib k)"
-  (*nitpick*)
-  oops
 
 lemma "lib i \<cdot> lib j = lib i + lib j"
   (*nitpick*)
@@ -571,5 +676,7 @@ lemma dcyl_kplus_prop [simp]: "dcyl i ((dcyl i x)\<^sup>\<oplus>) = (dcyl i x)\<
   by (metis antisym dcyl_defl dcyl_idem dcyl_kplus)
 
 end
+
+
 
 end
